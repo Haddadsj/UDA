@@ -7,87 +7,153 @@ from email.mime.multipart import MIMEMultipart
 # Set page configuration to remove the default Streamlit header and use full width
 st.set_page_config(page_title="4 Sales Docs Intake Form", layout="wide", initial_sidebar_state="collapsed")
 
-# Custom CSS for styling with your color scheme and enhanced design
+# Custom CSS for styling with Tesla/Grok-inspired design
 st.markdown("""
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Hide the default Streamlit header/menu bar */
-        header, .stAppHeader, .css-1d391kg, .st-emotion-cache-1d391kg {
+        /* Hide the default Streamlit header/menu bar and set full-page styling */
+        header, .stAppHeader, .css-1d391kg, .st-emotion-cache-1d391kg, .reportview-container .main .block-container {
             display: none !important;
         }
         body, html {
             margin: 0;
             padding: 0;
-            background-color: #F5F5F5; /* Match the form's background for seamlessness */
+            background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%); /* Dark futuristic background inspired by Tesla/Grok */
+            font-family: 'Montserrat', sans-serif;
+            overflow-x: hidden;
         }
         .main {
-            background: linear-gradient(135deg, #F5F5F5 0%, #E7E6E6 100%);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-            animation: fadeIn 1.5s ease-in;
-            margin: 0 auto;
-            max-width: 800px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(231, 230, 230, 0.1) 100%), #16213E; /* Subtle overlay on dark background */
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 104, 255, 0.3); /* Blue glow shadow */
+            animation: pulse 3s infinite ease-in-out;
+            margin: 20px auto;
+            max-width: 900px;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes pulse {
+            0% { box-shadow: 0 10px 30px rgba(0, 104, 255, 0.3); }
+            50% { box-shadow: 0 15px 40px rgba(0, 104, 255, 0.5); }
+            100% { box-shadow: 0 10px 30px rgba(0, 104, 255, 0.3); }
         }
         .title-container {
-            background-color: #0068FF;
-            padding: 20px;
-            border-radius: 15px 15px 0 0;
+            background: linear-gradient(45deg, #0068FF, #00D2FF); /* Neon blue gradient inspired by Tesla/Grok */
+            padding: 30px;
+            border-radius: 20px 20px 0 0;
             color: white;
             text-align: center;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 5px 15px rgba(0, 104, 255, 0.5);
+            animation: slideIn 1s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
         .stButton>button {
-            background-color: #0068FF;
+            background: linear-gradient(45deg, #0068FF, #00D2FF);
             color: white;
-            border-radius: 10px;
-            padding: 12px 24px;
+            border-radius: 15px;
+            padding: 15px 30px;
             border: none;
             cursor: pointer;
-            transition: background-color 0.3s, transform 0.2s;
+            font-weight: bold;
+            transition: transform 0.3s, background 0.3s;
+            position: relative;
+            overflow: hidden;
         }
         .stButton>button:hover {
-            background-color: #0052CC;
-            transform: scale(1.05);
+            transform: scale(1.1);
+            background: linear-gradient(45deg, #0052CC, #0099FF);
+        }
+        .stButton>button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        .stButton>button:hover::after {
+            width: 200px;
+            height: 200px;
         }
         .stTextInput, .stTextArea, .stSelectbox, .stMultiSelect {
             border: 2px solid #E7E6E6;
-            border-radius: 10px;
-            padding: 10px;
-            transition: border-color 0.3s;
+            border-radius: 15px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.9);
+            transition: border-color 0.3s, box-shadow 0.3s;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
         .stTextInput:focus, .stTextArea:focus, .stSelectbox:focus, .stMultiSelect:focus {
             border-color: #0068FF;
+            box-shadow: 0 4px 20px rgba(0, 104, 255, 0.4);
             outline: none;
         }
         .stHeader {
-            color: #434E5E;
-            font-size: 2.5em;
+            color: #E7E6E6; /* Light Grey for contrast on dark */
+            font-size: 2.8em;
             font-weight: bold;
+            text-shadow: 0 2px 5px rgba(0, 104, 255, 0.3);
             margin-bottom: 0;
         }
         .stSubheader {
-            color: #0068FF;
-            font-size: 1.2em;
+            color: #00D2FF; /* Bright neon blue */
+            font-size: 1.3em;
             margin-top: 5px;
+            text-shadow: 0 1px 3px rgba(0, 104, 255, 0.3);
         }
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
         .form-group label {
-            color: #434E5E;
+            color: #E7E6E6; /* Light Grey for contrast */
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            text-shadow: 0 1px 2px rgba(0, 104, 255, 0.2);
         }
         .form-group i {
-            color: #0068FF;
-            margin-right: 10px;
+            color: #00D2FF; /* Bright neon blue for icons */
+            margin-right: 12px;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        /* Particle animation for extra fun (optional, can be simplified) */
+        #particles-js {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
         }
     </style>
+    <div id="particles-js"></div>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        particlesJS('particles-js', {
+            "particles": {
+                "number": { "value": 80, "density": { "enable": true, "value_area": 800 } },
+                "color": { "value": "#00D2FF" },
+                "shape": { "type": "circle" },
+                "opacity": { "value": 0.5, "random": true },
+                "size": { "value": 3, "random": true },
+                "line_linked": { "enable": true, "distance": 150, "color": "#00D2FF", "opacity": 0.4, "width": 1 },
+                "move": { "enable": true, "speed": 2, "direction": "none", "random": true, "straight": false, "out_mode": "out" }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": { "onhover": { "enable": true, "mode": "repulse" }, "onclick": { "enable": true, "mode": "push" } },
+                "modes": { "repulse": { "distance": 100, "duration": 0.4 } }
+            }
+        });
+    </script>
 """, unsafe_allow_html=True)
 
 # Title and description with custom styling
