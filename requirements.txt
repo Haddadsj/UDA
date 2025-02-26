@@ -1,4 +1,1 @@
-streamlit
-PyMuPDF
-pandas
-plotly
+pip install streamlit pandas matplotlib seaborn plotly
