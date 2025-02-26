@@ -2,179 +2,155 @@ import streamlit as st
 import fitz  # PyMuPDF
 import re
 import pandas as pd
-import matplotlib.pyplot as plt
-from fpdf import FPDF
-import unicodedata
-import logging
-import os
+import plotly.express as px
+import plotly.graph_objects as go
+from typing import Dict, Optional, List
 from datetime import datetime
+import logging
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Utility functions
-def normalize_text(text):
-    """Normalize text by removing emojis and special characters."""
-    return unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii').strip()
+# Regex patterns for field extraction
+FIELD_PATTERNS = {
+    "account_number": r"(?:Account\s*(?:Number|#)?[:\s]*)([\d\-\w]+)",
+    "service_address": r"(?:Service\s*Address|Address)[:\s]*(.*?)(?:\n|$)",
+    "total_usage": r"(?:Total\s*(?:Usage|Consumption)[\s:]*)([\d,]+\.?\d*)\s*(kWh|CCF)",
+    "total_cost": r"(?:Total\s*(?:Cost|Amount\s*Due)[\s:]*)\$?([\d,]+\.?\d*)",
+    "billing_period": r"(?:Billing\s*Period|Period)[:\s]*(\d{1,2}/\d{1,2}/\d{2,4}\s*-\s*\d{1,2}/\d{1,2}/\d{2,4})",
+    "due_date": r"(?:Due\s*Date|Payment\s*Due)[:\s]*(\d{1,2}/\d{1,2}/\d{2,4})"
+}
 
-@st.cache_data
-def extract_text_from_pdf(pdf_file):
+# Utility Functions
+def extract_text_from_pdf(pdf_file) -> str:
     """Extract text from a PDF file using PyMuPDF."""
     try:
         doc = fitz.open(stream=pdf_file.read(), filetype="pdf")
-        text = ""
-        for page in doc:
-            text += page.get_text("text")
-        return normalize_text(text)
+        text = "".join(page.get_text() for page in doc)
+        doc.close()
+        return text
     except Exception as e:
-        logger.error(f"Failed to extract text from PDF: {e}")
-        return None
+        logger.error(f"PDF extraction failed: {e}")
+        return ""
 
-def parse_bill_data(text):
-    """Extract key fields from utility bill text using regex."""
-    patterns = {
-        "account_number": r"(?:Account\s*(?:Number|No\.?|#)\s*[:\-\s]*)([A-Za-z0-9\-]+)",
-        "service_address": r"(?:Service\s*Address|Address\s*[:\-\s]*)([\w\s,]+?)(?=\n|\s{2,}|$)",
-        "total_usage": r"(?:Total\s*(?:Usage|Consumption|Quantity)\s*[:\-\s]*)([\d,\.]+)\s*(kWh|CCF)",
-        "total_cost": r"(?:Total\s*(?:Amount|Cost|Due)\s*[:\-\s]*)\$?([\d,\.]+)",
-        "billing_period": r"(?:Billing\s*Period|Period\s*[:\-\s]*)([\w\s\d\-]+)",
-        "due_date": r"(?:Due\s*Date|Payment\s*Due\s*[:\-\s]*)([\w\s\d,]+)"
-    }
-    
-    extracted_data = {}
-    if not text:
-        return extracted_data
-    
-    for key, pattern in patterns.items():
+def extract_data(text: str) -> Dict[str, Optional[str]]:
+    """Extract key fields from text using regex."""
+    data = {}
+    for field, pattern in FIELD_PATTERNS.items():
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
             value = match.group(1).strip()
-            if key == "total_usage":
-                extracted_data[key] = value
-                extracted_data["usage_unit"] = match.group(2)
-            elif key == "total_cost":
-                extracted_data[key] = float(value.replace(",", ""))
+            if field == "total_usage":
+                data[field] = value.replace(",", "")
+                data["usage_unit"] = match.group(2)
+            elif field == "total_cost":
+                data[field] = value.replace(",", "")
             else:
-                extracted_data[key] = value
-    return extracted_data
-
-def validate_data(data):
-    """Validate extracted data and return a status message."""
-    required_fields = ["total_usage", "total_cost"]
-    missing_fields = [field for field in required_fields if field not in data or not data[field]]
-    return f"Warning: Missing {', '.join(missing_fields)}." if missing_fields else "Extraction successful."
-
-def generate_charts(data):
-    """Generate interactive usage and cost trend charts."""
-    if "total_usage" not in data or "total_cost" not in data:
-        return None, None
-    
-    df = pd.DataFrame([data])
-    df["total_usage"] = df["total_usage"].str.replace(",", "").astype(float)
-    df["total_cost"] = df["total_cost"].astype(float)
-    
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-    
-    ax1.bar(["Bill"], df["total_usage"], label="Usage", color="blue")
-    ax1.set_ylabel(f"Usage ({data.get('usage_unit', 'Unknown')})", color="blue")
-    ax1.tick_params(axis="y", labelcolor="blue")
-    ax1_twin = ax1.twinx()
-    ax1_twin.plot(["Bill"], df["total_cost"], color="green", marker="o", label="Cost")
-    ax1_twin.set_ylabel("Cost ($)", color="green")
-    ax1_twin.tick_params(axis="y", labelcolor="green")
-    ax1.set_title("Usage vs Cost")
-    
-    ax2.bar(["Current Bill"], df["total_cost"], color="purple")
-    ax2.set_title("Monthly Cost")
-    ax2.set_ylabel("Cost ($)")
-    
-    plt.tight_layout()
-    return fig, df
-
-def generate_pdf_report(data, output_path="report.pdf"):
-    """Generate a PDF report summarizing the extracted data."""
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    
-    pdf.cell(200, 10, txt="Utility Bill Analysis Report", ln=True, align="C")
-    pdf.ln(10)
-    
-    for key, value in data.items():
-        if key != "usage_unit":
-            pdf.cell(200, 10, txt=f"{key.replace('_', ' ').title()}: {value}", ln=True)
-    
-    pdf.output(output_path)
-    return output_path
-
-# Streamlit App
-st.set_page_config(page_title="Utility Bill Analyzer", layout="wide")
-
-# Custom CSS for better UI
-st.markdown("""
-    <style>
-    .main { padding: 20px; }
-    .stButton>button { background-color: #4CAF50; color: white; }
-    </style>
-""", unsafe_allow_html=True)
-
-st.title("Utility Bill Analyzer")
-st.markdown("Upload your utility bill (PDF) to analyze usage, costs, and generate a report.")
-
-# File uploader
-uploaded_file = st.file_uploader("Choose a PDF file", type="pdf", help="Supports electricity/gas bills.")
-
-if uploaded_file:
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    
-    # Step 1: Extract text
-    status_text.text("Extracting text from PDF...")
-    text = extract_text_from_pdf(uploaded_file)
-    progress_bar.progress(25)
-    
-    if not text:
-        st.error("Couldn’t extract text. Please ensure the PDF is readable.")
-    else:
-        # Step 2: Parse data
-        status_text.text("Parsing bill details...")
-        bill_data = parse_bill_data(text)
-        validation_message = validate_data(bill_data)
-        st.info(validation_message)
-        progress_bar.progress(50)
-        
-        if bill_data:
-            # Step 3: Display extracted data
-            st.subheader("Extracted Details")
-            st.dataframe(pd.DataFrame([bill_data]), use_container_width=True)
-            progress_bar.progress(75)
-            
-            # Step 4: Generate and display charts
-            status_text.text("Generating insights...")
-            fig, df = generate_charts(bill_data)
-            if fig:
-                st.subheader("Insights")
-                st.pyplot(fig)
-            
-            # Step 5: Generate and provide report
-            status_text.text("Creating report...")
-            report_path = generate_pdf_report(bill_data)
-            with open(report_path, "rb") as f:
-                st.download_button(
-                    label="Download Report",
-                    data=f,
-                    file_name=f"bill_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-                    mime="application/pdf"
-                )
-            os.remove(report_path)  # Clean up
-            progress_bar.progress(100)
-            status_text.text("Analysis complete!")
+                data[field] = value
         else:
-            st.warning("No data found. Check the PDF format.")
-else:
-    st.info("Upload a bill to start.")
+            data[field] = None
+    return data
 
-# Footer
-st.markdown("---")
-st.caption("Built with ❤️ by xAI | Powered by Streamlit")
+def clean_data(data: Dict[str, Optional[str]]) -> Dict[str, Optional[str]]:
+    """Clean and validate extracted data."""
+    cleaned = data.copy()
+    for field in ["total_usage", "total_cost"]:
+        if cleaned.get(field):
+            try:
+                cleaned[field] = float(cleaned[field])
+            except ValueError:
+                cleaned[field] = None
+    return cleaned
+
+def create_dataframe(data: Dict[str, Optional[str]]) -> pd.DataFrame:
+    """Convert extracted data to a DataFrame."""
+    return pd.DataFrame([data])
+
+# Dashboard Functions
+def display_extracted_data(df: pd.DataFrame) -> None:
+    """Display extracted data in a clean table."""
+    st.subheader("Extracted Bill Details")
+    st.dataframe(df.style.format({
+        "total_usage": "{:.2f}",
+        "total_cost": "${:.2f}"
+    }).hide(axis="index"), use_container_width=True)
+
+def plot_usage_vs_cost(df: pd.DataFrame) -> None:
+    """Plot Usage vs Cost as a bar chart."""
+    if df["total_usage"].notna().any() and df["total_cost"].notna().any():
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            x=["Usage", "Cost"],
+            y=[df["total_usage"].iloc[0], df["total_cost"].iloc[0]],
+            marker_color=["#1f77b4", "#ff7f0e"],
+            text=[f"{df['total_usage'].iloc[0]:.2f} {df['usage_unit'].iloc[0]}", f"${df['total_cost'].iloc[0]:.2f}"],
+            textposition="auto"
+        ))
+        fig.update_layout(
+            title="Usage vs Cost",
+            yaxis_title="Value",
+            template="plotly_white",
+            height=400
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.warning("Insufficient data to plot Usage vs Cost.")
+
+def plot_mock_trends(df: pd.DataFrame) -> None:
+    """Simulate historical trends if multiple bills were uploaded."""
+    if df["total_usage"].notna().any() and df["total_cost"].notna().any():
+        # Mock data for demonstration (in practice, you'd aggregate multiple bills)
+        mock_df = pd.DataFrame({
+            "Month": ["Jan", "Feb", "Mar"],
+            "Usage": [df["total_usage"].iloc[0] * 0.9, df["total_usage"].iloc[0], df["total_usage"].iloc[0] * 1.1],
+            "Cost": [df["total_cost"].iloc[0] * 0.95, df["total_cost"].iloc[0], df["total_cost"].iloc[0] * 1.05]
+        })
+        fig = px.line(mock_df, x="Month", y=["Usage", "Cost"], title="Usage and Cost Trends",
+                      labels={"value": "Value", "variable": "Metric"},
+                      template="plotly_white")
+        fig.update_traces(mode="lines+markers")
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.warning("Insufficient data to plot trends.")
+
+# Main App
+def main():
+    st.set_page_config(page_title="Utility Bill Analyzer", layout="wide")
+    st.title("📊 Utility Bill Analyzer Dashboard")
+    st.markdown("Upload your utility bill (PDF) to extract and visualize key insights.")
+
+    # File Upload
+    uploaded_file = st.file_uploader("Upload a Utility Bill (PDF)", type="pdf")
+
+    if uploaded_file:
+        with st.spinner("Processing your bill..."):
+            # Extract and process data
+            text = extract_text_from_pdf(uploaded_file)
+            if not text:
+                st.error("Could not extract text from the PDF. Please ensure it’s a valid, readable file.")
+                return
+
+            raw_data = extract_data(text)
+            cleaned_data = clean_data(raw_data)
+            df = create_dataframe(cleaned_data)
+
+            # Dashboard Layout
+            col1, col2 = st.columns([1, 2])
+
+            with col1:
+                display_extracted_data(df)
+
+            with col2:
+                plot_usage_vs_cost(df)
+                plot_mock_trends(df)
+
+            # Feedback if critical data is missing
+            if not df["total_usage"].notna().any() or not df["total_cost"].notna().any():
+                st.warning("Some key data (Usage or Cost) could not be extracted. Results may be incomplete.")
+
+    else:
+        st.info("Please upload a PDF to begin analyzing your utility bill.")
+
+if __name__ == "__main__":
+    main()
