@@ -13,7 +13,7 @@ st.markdown("""
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* Hide the default Streamlit header/menu bar and set full-page styling */
-        header, .stAppHeader, .css-1d391kg, .st-emotion-cache-1d391kg, .reportview-container .main .block-container {
+        header, .stAppHeader, .css-1d391kg, .st-emotion-cache-1d391kg, .reportview-container .main .block-container, .stMarkdown, .stText, .stDataFrame, .stSpinner {
             display: none !important;
         }
         body, html {
@@ -41,7 +41,7 @@ st.markdown("""
             background: linear-gradient(45deg, #0068FF, #00D2FF); /* Neon blue gradient inspired by Tesla/Grok */
             padding: 30px;
             border-radius: 20px 20px 0 0;
-            color: white; /* Changed to white for the title text only */
+            color: white; /* White text for title */
             text-align: center;
             box-shadow: 0 5px 15px rgba(0, 104, 255, 0.5);
             animation: slideIn 1s ease-out;
@@ -103,7 +103,7 @@ st.markdown("""
             margin-bottom: 0;
         }
         .stSubheader {
-            color: #00D2FF; /* Bright neon blue */
+            color: white; /* Changed to white for the subheader text */
             font-size: 1.3em;
             margin-top: 5px;
             text-shadow: 0 1px 3px rgba(0, 104, 255, 0.3);
