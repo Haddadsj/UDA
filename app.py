@@ -80,22 +80,26 @@ def plot_analysis(df):
 
 
 def generate_report(data):
-    """Create a well-structured PDF report."""
+    """Create a well-structured PDF report that handles encoding issues."""
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", "B", 16)
     pdf.cell(200, 10, "📄 Utility Bill Analysis Report", ln=True, align="C")
     pdf.ln(10)
+    
     pdf.set_font("Arial", "B", 12)
     pdf.cell(0, 10, "Summary:", ln=True)
     pdf.set_font("Arial", "", 11)
 
     for key, value in data.items():
-        pdf.cell(0, 10, f"{key}: {value}", ln=True)
+        # Convert text to Latin-1 and replace unsupported characters
+        safe_value = str(value).encode("latin1", "ignore").decode("latin1")
+        pdf.cell(0, 10, f"{key}: {safe_value}", ln=True)
 
     report_path = "Utility_Bill_Analysis_Report.pdf"
-    pdf.output(report_path)
+    pdf.output(report_path, "F")
     return report_path
+
 
 def main():
     st.title("📊 Utility Bill Analysis Tool")
