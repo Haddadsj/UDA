@@ -5,12 +5,21 @@ import fitz  # PyMuPDF for PDF parsing
 import os
 from fpdf import FPDF
 
-def extract_text_from_pdf(pdf_file):
-    """Extract text from an uploaded PDF file."""
-    doc = fitz.open(pdf_file)
+import fitz  # PyMuPDF
+import io
+
+def extract_text_from_pdf(uploaded_file):
+    """Extract text from an uploaded PDF file in Streamlit."""
+    # Read the uploaded file into a bytes buffer
+    pdf_bytes = uploaded_file.read()
+    
+    # Open the PDF from bytes instead of a file path
+    doc = fitz.open("pdf", pdf_bytes)
+    
     text = ""
     for page in doc:
         text += page.get_text("text") + "\n"
+    
     return text
 
 def parse_utility_data(text):
