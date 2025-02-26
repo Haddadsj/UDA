@@ -49,12 +49,10 @@ def parse_utility_data(text):
 def plot_analysis(df):
     """Generate charts based on extracted data."""
     st.subheader("📊 Utility Bill Analysis")
-
-    # Generate a Month column if missing (for visualization)
     if "Month" not in df.columns:
         df["Month"] = [f"Entry {i+1}" for i in range(len(df))]
 
-    fig, ax1 = plt.subplots(figsize=(8, 5))
+    fig, ax1 = plt.subplots(figsize=(8,5))
     color = 'tab:blue'
     ax1.set_xlabel('Entries')
     ax1.set_ylabel('Electric Usage (kWh)', color=color)
@@ -70,14 +68,13 @@ def plot_analysis(df):
     fig.tight_layout()
     st.pyplot(fig)
 
-    plt.figure(figsize=(8, 5))
+    plt.figure(figsize=(8,5))
     plt.plot(df["Month"], df["Blended Rate ($/kWh)"], marker="d", linestyle="-", color="purple")
     plt.xlabel("Entries")
     plt.ylabel("Blended Rate ($/kWh)")
     plt.title("📉 Blended Rate Trend")
     plt.grid()
     st.pyplot(plt)
-
 
 def generate_report(data):
     """Create a well-structured PDF report that handles encoding issues."""
@@ -86,20 +83,17 @@ def generate_report(data):
     pdf.set_font("Arial", "B", 16)
     pdf.cell(200, 10, "📄 Utility Bill Analysis Report", ln=True, align="C")
     pdf.ln(10)
-    
     pdf.set_font("Arial", "B", 12)
     pdf.cell(0, 10, "Summary:", ln=True)
     pdf.set_font("Arial", "", 11)
 
     for key, value in data.items():
-        # Convert text to Latin-1 and replace unsupported characters
-        safe_value = str(value).encode("latin1", "ignore").decode("latin1")
+        safe_value = str(value).encode("latin-1", "ignore").decode("latin-1")
         pdf.cell(0, 10, f"{key}: {safe_value}", ln=True)
 
     report_path = "Utility_Bill_Analysis_Report.pdf"
     pdf.output(report_path, "F")
     return report_path
-
 
 def main():
     st.title("📊 Utility Bill Analysis Tool")
@@ -121,6 +115,10 @@ def main():
             report_path = generate_report(extracted_data)
             with open(report_path, "rb") as file:
                 st.download_button("📄 Download Report", data=file, file_name="Utility_Bill_Report.pdf")
+
+if __name__ == "__main__":
+    main()
+
 
 if __name__ == "__main__":
     main()
