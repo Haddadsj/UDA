@@ -4,16 +4,30 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+# Set page configuration to remove the default Streamlit header and use full width
+st.set_page_config(page_title="4 Sales Docs Intake Form", layout="wide", initial_sidebar_state="collapsed")
+
 # Custom CSS for styling with your color scheme and enhanced design
 st.markdown("""
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        /* Hide the default Streamlit header/menu bar */
+        header, .stAppHeader, .css-1d391kg, .st-emotion-cache-1d391kg {
+            display: none !important;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            background-color: #F5F5F5; /* Match the form's background for seamlessness */
+        }
         .main {
             background: linear-gradient(135deg, #F5F5F5 0%, #E7E6E6 100%);
             padding: 20px;
             border-radius: 15px;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
             animation: fadeIn 1.5s ease-in;
+            margin: 0 auto;
+            max-width: 800px;
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-20px); }
