@@ -49,9 +49,14 @@ def parse_utility_data(text):
 def plot_analysis(df):
     """Generate charts based on extracted data."""
     st.subheader("📊 Utility Bill Analysis")
-    fig, ax1 = plt.subplots(figsize=(8,5))
+
+    # Generate a Month column if missing (for visualization)
+    if "Month" not in df.columns:
+        df["Month"] = [f"Entry {i+1}" for i in range(len(df))]
+
+    fig, ax1 = plt.subplots(figsize=(8, 5))
     color = 'tab:blue'
-    ax1.set_xlabel('Month')
+    ax1.set_xlabel('Entries')
     ax1.set_ylabel('Electric Usage (kWh)', color=color)
     ax1.plot(df["Month"], df["Total Usage (kWh)"], marker="o", linestyle="-", color=color, label="Electric Usage (kWh)")
     ax1.tick_params(axis='y', labelcolor=color)
@@ -65,13 +70,14 @@ def plot_analysis(df):
     fig.tight_layout()
     st.pyplot(fig)
 
-    plt.figure(figsize=(8,5))
+    plt.figure(figsize=(8, 5))
     plt.plot(df["Month"], df["Blended Rate ($/kWh)"], marker="d", linestyle="-", color="purple")
-    plt.xlabel("Month")
+    plt.xlabel("Entries")
     plt.ylabel("Blended Rate ($/kWh)")
     plt.title("📉 Blended Rate Trend")
     plt.grid()
     st.pyplot(plt)
+
 
 def generate_report(data):
     """Create a well-structured PDF report."""
