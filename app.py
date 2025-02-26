@@ -7,21 +7,22 @@ from email.mime.multipart import MIMEMultipart
 # Set page configuration to remove the default Streamlit header and use full width
 st.set_page_config(page_title="4 Sales Docs Intake Form", layout="wide", initial_sidebar_state="collapsed")
 
-# Custom CSS for styling with Tesla/Grok-inspired design
+# Custom CSS for styling with Tesla/Grok-inspired design and white text
 st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* Hide the default Streamlit header/menu bar and set full-page styling */
-        header, .stAppHeader, .css-1d391kg, .st-emotion-cache-1d391kg, .reportview-container .main .block-container {
+        header, .stAppHeader, .css-1d391kg, .st-emotion-cache-1d391kg, .reportview-container .main .block-container, .stMarkdown, .stText, .stDataFrame {
             display: none !important;
         }
         body, html {
             margin: 0;
             padding: 0;
-            background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%); /* Dark futuristic background inspired by Tesla/Grok */
+            background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%); /* Dark futuristic background */
             font-family: 'Montserrat', sans-serif;
             overflow-x: hidden;
+            color: white; /* Default text color set to white */
         }
         .main {
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(231, 230, 230, 0.1) 100%), #16213E; /* Subtle overlay on dark background */
@@ -38,10 +39,10 @@ st.markdown("""
             100% { box-shadow: 0 10px 30px rgba(0, 104, 255, 0.3); }
         }
         .title-container {
-            background: linear-gradient(45deg, #0068FF, #00D2FF); /* Neon blue gradient inspired by Tesla/Grok */
+            background: linear-gradient(45deg, #0068FF, #00D2FF); /* Neon blue gradient */
             padding: 30px;
             border-radius: 20px 20px 0 0;
-            color: white;
+            color: white; /* White text for title */
             text-align: center;
             box-shadow: 0 5px 15px rgba(0, 104, 255, 0.5);
             animation: slideIn 1s ease-out;
@@ -52,7 +53,7 @@ st.markdown("""
         }
         .stButton>button {
             background: linear-gradient(45deg, #0068FF, #00D2FF);
-            color: white;
+            color: white; /* White text for button */
             border-radius: 15px;
             padding: 15px 30px;
             border: none;
@@ -82,21 +83,25 @@ st.markdown("""
             width: 200px;
             height: 200px;
         }
-        .stTextInput, .stTextArea, .stSelectbox, .stMultiSelect {
+        .stTextInput, .stTextArea, .stSelectbox, .stMultiSelect, .stFileUploader {
             border: 2px solid #E7E6E6;
             border-radius: 15px;
             padding: 12px;
             background: rgba(255, 255, 255, 0.9);
             transition: border-color 0.3s, box-shadow 0.3s;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            color: #434E5E; /* Dark Grey for input text to contrast with white background */
         }
-        .stTextInput:focus, .stTextArea:focus, .stSelectbox:focus, .stMultiSelect:focus {
+        .stTextInput:focus, .stTextArea:focus, .stSelectbox:focus, .stMultiSelect:focus, .stFileUploader:focus {
             border-color: #0068FF;
             box-shadow: 0 4px 20px rgba(0, 104, 255, 0.4);
             outline: none;
         }
+        .stTextInput::placeholder, .stTextArea::placeholder {
+            color: #A0A0A0; /* Light grey placeholder text for visibility */
+        }
         .stHeader {
-            color: #E7E6E6; /* Light Grey for contrast on dark */
+            color: white; /* White text for headers */
             font-size: 2.8em;
             font-weight: bold;
             text-shadow: 0 2px 5px rgba(0, 104, 255, 0.3);
@@ -112,7 +117,7 @@ st.markdown("""
             margin-bottom: 20px;
         }
         .form-group label {
-            color: #E7E6E6; /* Light Grey for contrast */
+            color: white; /* White text for labels */
             font-weight: bold;
             margin-bottom: 8px;
             text-shadow: 0 1px 2px rgba(0, 104, 255, 0.2);
@@ -126,7 +131,7 @@ st.markdown("""
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-5px); }
         }
-        /* Particle animation for extra fun (optional, can be simplified) */
+        /* Particle animation for extra fun */
         #particles-js {
             position: absolute;
             width: 100%;
