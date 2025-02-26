@@ -1,5 +1,8 @@
 import streamlit as st
 import pandas as pd
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # Custom CSS for styling with your color scheme
 st.markdown("""
@@ -11,7 +14,7 @@ st.markdown("""
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         .stButton>button {
-            background-color: #0068FF;
+            background-color: #0068FF; /* Blue */
             color: white;
             border-radius: 5px;
             padding: 10px 20px;
@@ -22,17 +25,17 @@ st.markdown("""
             background-color: #0052CC;
         }
         .stTextInput, .stTextArea, .stSelectbox, .stMultiSelect {
-            border: 1px solid #E7E6E6;
+            border: 1px solid #E7E6E6; /* Light Grey */
             border-radius: 5px;
             padding: 5px;
         }
         .stHeader {
-            color: #434E5E;
+            color: #434E5E; /* Dark Grey */
             font-size: 2em;
             font-weight: bold;
         }
         .stSubheader {
-            color: #0068FF;
+            color: #0068FF; /* Blue */
         }
     </style>
 """, unsafe_allow_html=True)
@@ -88,12 +91,12 @@ with st.form(key="sales_docs_form"):
     # Submit button
     submit_button = st.form_submit_button(label="Submit Form")
 
-    # On submit, display the data
+    # On submit, display the data and send email
     if submit_button:
         if not company_name or not contact_email:  # Basic validation
             st.error("Please fill in the Company Name and Contact Email.")
         else:
-            # Prepare data for display
+            # Prepare data for display and email
             form_data = {
                 "Company Name": company_name,
                 "Company Contact": company_contact,
@@ -116,7 +119,29 @@ with st.form(key="sales_docs_form"):
             st.success("Thank you for submitting! Here’s what you entered:")
             st.write(pd.DataFrame([form_data]))
 
-            # Optionally, you could save this data to a CSV or database here
-            # For now, it’s just displayed in the app
+            # Email setup (using Gmail as an example)
+            sender_email = "your_gmail_account@gmail.com"  # Replace with your Gmail
+            sender_password = "your_app_password"  # Replace with your Gmail App Password or password (if less secure apps are enabled)
+            recipient_email = "samijhaddad@icloud.com"
+
+            # Create email
+            msg = MIMEMultipart()
+            msg['From'] = sender_email
+            msg['To'] = recipient_email
+            msg['Subject'] = "New 4 Sales Docs Intake Form Submission"
+
+            # Format the form data as a string for the email body
+            body = "New submission received:\n\n" + "\n".join([f"{key}: {value}" for key, value in form_data.items()])
+            msg.attach(MIMEText(body, 'plain'))
+
+            try:
+                # Connect to Gmail's SMTP server and send the email
+                with smtplib.SMTP('smtp.gmail.com', 587) as server:
+                    server.starttls()
+                    server.login(sender_email, sender_password)
+                    server.send_message(msg)
+                st.success("Submission has been emailed successfully!")
+            except Exception as e:
+                st.error(f"Failed to send email: {str(e)}")
 
 st.markdown('</div>', unsafe_allow_html=True)
