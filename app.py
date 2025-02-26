@@ -59,7 +59,7 @@ def clean_data(data: Dict[str, Optional[str]]) -> Dict[str, Optional[str]]:
         if cleaned.get(field):
             try:
                 cleaned[field] = float(cleaned[field])
-            except ValueError:
+            except (ValueError, TypeError):
                 cleaned[field] = None
     return cleaned
 
@@ -68,13 +68,28 @@ def create_dataframe(data: Dict[str, Optional[str]]) -> pd.DataFrame:
     return pd.DataFrame([data])
 
 # Dashboard Functions
+def format_value(value, format_str: str) -> str:
+    """Custom formatter to handle None or non-numeric values."""
+    if value is None or pd.isna(value):
+        return "N/A"
+    try:
+        return format_str.format(float(value))
+    except (ValueError, TypeError):
+        return str(value)
+
 def display_extracted_data(df: pd.DataFrame) -> None:
-    """Display extracted data in a clean table."""
+    """Display extracted data in a clean table with robust formatting."""
     st.subheader("Extracted Bill Details")
-    st.dataframe(df.style.format({
-        "total_usage": "{:.2f}",
-        "total_cost": "${:.2f}"
-    }).hide(axis="index"), use_container_width=True)
+    styled_df = df.style.format({
+        "total_usage": lambda x: format_value(x, "{:.2f}"),
+        "total_cost": lambda x: format_value(x, "${:.2f}"),
+        "account_number": str,
+        "service_address": str,
+        "billing_period": str,
+        "due_date": str,
+        "usage_unit": str
+    }).hide(axis="index")
+    st.dataframe(styled_df, use_container_width=True)
 
 def plot_usage_vs_cost(df: pd.DataFrame) -> None:
     """Plot Usage vs Cost as a bar chart."""
@@ -100,7 +115,6 @@ def plot_usage_vs_cost(df: pd.DataFrame) -> None:
 def plot_mock_trends(df: pd.DataFrame) -> None:
     """Simulate historical trends if multiple bills were uploaded."""
     if df["total_usage"].notna().any() and df["total_cost"].notna().any():
-        # Mock data for demonstration (in practice, you'd aggregate multiple bills)
         mock_df = pd.DataFrame({
             "Month": ["Jan", "Feb", "Mar"],
             "Usage": [df["total_usage"].iloc[0] * 0.9, df["total_usage"].iloc[0], df["total_usage"].iloc[0] * 1.1],
@@ -125,7 +139,6 @@ def main():
 
     if uploaded_file:
         with st.spinner("Processing your bill..."):
-            # Extract and process data
             text = extract_text_from_pdf(uploaded_file)
             if not text:
                 st.error("Could not extract text from the PDF. Please ensure it’s a valid, readable file.")
@@ -145,7 +158,6 @@ def main():
                 plot_usage_vs_cost(df)
                 plot_mock_trends(df)
 
-            # Feedback if critical data is missing
             if not df["total_usage"].notna().any() or not df["total_cost"].notna().any():
                 st.warning("Some key data (Usage or Cost) could not be extracted. Results may be incomplete.")
 
