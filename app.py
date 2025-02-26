@@ -3,72 +3,90 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import fitz  # PyMuPDF for PDF parsing
 import re
+import unicodedata
 from fpdf import FPDF
 import io
 
 def extract_text_from_pdf(uploaded_file):
-    """Extract text from an uploaded PDF file in Streamlit with error handling."""
+    """Extracts text from an uploaded PDF file in Streamlit with robust error handling."""
     try:
         pdf_bytes = uploaded_file.read()
         doc = fitz.open("pdf", pdf_bytes)
         text = ""
         for page in doc:
             text += page.get_text("text") + "\n"
-        return text
+        return text if text.strip() else "No readable text found"
     except Exception as e:
         st.error(f"Error extracting text from PDF: {e}")
         return ""
 
 def parse_utility_data(text):
-    """Extract structured data from the utility bill text with error handling."""
+    """Extracts structured data from the utility bill text with error handling and pattern matching."""
     try:
         data = {
             "Account Number": "Unknown",
             "Service Address": "Unknown",
-            "Total Usage (kWh)": 0,
-            "Total Cost ($)": 0.0,
-            "Blended Rate ($/kWh)": 0.0,
+            "Total Usage (kWh or CCF)": "Unknown",
+            "Total Cost ($)": "Unknown",
+            "Billing Period": "Unknown",
+            "Due Date": "Unknown",
         }
 
-        match = re.search(r"Account\s*Number[:\s]+(\d+)", text)
+        # Search for Account Number
+        match = re.search(r"Account\s*Number[:\s]+([\d\-]+)", text, re.IGNORECASE)
         if match:
             data["Account Number"] = match.group(1)
 
-        match = re.search(r"Service Address[:\s]+([\w\s,]+)", text)
+        # Search for Service Address
+        match = re.search(r"Service\s*Address[:\s]+([\w\s,]+)", text, re.IGNORECASE)
         if match:
             data["Service Address"] = match.group(1).strip()
 
-        match = re.search(r"(?i)(?:Usage|Total\s*kWh)[:\s]+([\d,]+)", text)
+        # Search for Usage (kWh for electric, CCF for gas)
+        match = re.search(r"(?:Total\s*Usage|Total\s*kWh|Total\s*CCF)[:\s]+([\d,]+)", text, re.IGNORECASE)
         if match:
-            data["Total Usage (kWh)"] = int(match.group(1).replace(",", ""))
+            data["Total Usage (kWh or CCF)"] = match.group(1).replace(",", "")
 
-        match = re.search(r"(?i)(?:Total\s*Due|Amount\s*Due|Total\s*Cost)[:\s]+\$?([\d,]+\.?\d*)", text)
+        # Search for Total Cost
+        match = re.search(r"(?:Total\s*Due|Amount\s*Due|Total\s*Cost)[:\s]+\$?([\d,]+\.\d{2})", text, re.IGNORECASE)
         if match:
-            data["Total Cost ($)"] = float(match.group(1).replace(",", ""))
+            data["Total Cost ($)"] = match.group(1).replace(",", "")
 
-        if data["Total Usage (kWh)"] > 0:
-            data["Blended Rate ($/kWh)"] = round(data["Total Cost ($)"] / data["Total Usage (kWh)"], 4)
-        
+        # Search for Billing Period
+        match = re.search(r"Billing\s*Period[:\s]+([\w\d\s/-]+)", text, re.IGNORECASE)
+        if match:
+            data["Billing Period"] = match.group(1).strip()
+
+        # Search for Due Date
+        match = re.search(r"Due\s*Date[:\s]+([\w\d/-]+)", text, re.IGNORECASE)
+        if match:
+            data["Due Date"] = match.group(1).strip()
+
         return data
     except Exception as e:
         st.error(f"Error parsing utility data: {e}")
         return {}
 
+def clean_text_for_pdf(text):
+    """Removes emojis and unsupported characters for FPDF compatibility."""
+    return ''.join(c for c in text if unicodedata.category(c)[0] != 'So')
+
 def generate_report(data):
-    """Create a well-structured PDF report with error handling."""
+    """Creates a structured PDF report while preventing encoding errors."""
     try:
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", "B", 16)
-        pdf.cell(200, 10, "📄 Utility Bill Analysis Report", ln=True, align="C")
+        pdf.cell(200, 10, clean_text_for_pdf("Utility Bill Analysis Report"), ln=True, align="C")
         pdf.ln(10)
         pdf.set_font("Arial", "B", 12)
         pdf.cell(0, 10, "Summary:", ln=True)
         pdf.set_font("Arial", "", 11)
 
         for key, value in data.items():
-            safe_value = str(value).encode("latin-1", "ignore").decode("latin-1")
-            pdf.cell(0, 10, f"{key}: {safe_value}", ln=True)
+            safe_key = clean_text_for_pdf(str(key))
+            safe_value = clean_text_for_pdf(str(value)).encode("latin-1", "ignore").decode("latin-1")
+            pdf.cell(0, 10, f"{safe_key}: {safe_value}", ln=True)
 
         report_path = "Utility_Bill_Analysis_Report.pdf"
         pdf.output(report_path, "F")
@@ -86,18 +104,20 @@ def main():
     if uploaded_file:
         with st.spinner("Extracting data..."):
             pdf_text = extract_text_from_pdf(uploaded_file)
-            if not pdf_text.strip():
-                st.error("No text extracted from the PDF. Please try another file.")
+            if "No readable text found" in pdf_text:
+                st.error("No readable text extracted from the PDF. Please try another file.")
                 return
-            extracted_data = parse_utility_data(pdf_text)
-            if not extracted_data:
-                st.error("Could not parse any meaningful data. Please check the file format.")
-                return
-            df = pd.DataFrame([extracted_data])
             
+            extracted_data = parse_utility_data(pdf_text)
+            if not extracted_data or all(v == "Unknown" for v in extracted_data.values()):
+                st.error("Could not extract meaningful data. Please check the file format.")
+                return
+            
+            df = pd.DataFrame([extracted_data])
             st.success("✅ Data Extracted Successfully!")
             st.write(df)
-            
+
+            # Generate PDF report
             report_path = generate_report(extracted_data)
             if report_path:
                 with open(report_path, "rb") as file:
