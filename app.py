@@ -13,6 +13,12 @@ st.markdown("""
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
+        .title-container {
+            background-color: #0068FF; /* Blue for title background */
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
+            color: white; /* White text for title */
+        }
         .stButton>button {
             background-color: #0068FF; /* Blue */
             color: white;
@@ -40,9 +46,10 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Title and description
-st.markdown('<div class="main"><h1 class="stHeader">4 Sales Docs Intake Form</h1>', unsafe_allow_html=True)
-st.markdown('<p class="stSubheader">Please fill out the details below to help us understand your needs.</p>', unsafe_allow_html=True)
+# Title and description with custom styling
+st.markdown('<div class="title-container"><h1 class="stHeader">4 Sales Docs Intake Form</h1>', unsafe_allow_html=True)
+st.markdown('<p class="stSubheader">Please fill out the details below to help us understand your needs.</p></div>', unsafe_allow_html=True)
+st.markdown('<div class="main">', unsafe_allow_html=True)
 
 # Form
 with st.form(key="sales_docs_form"):
@@ -121,7 +128,7 @@ with st.form(key="sales_docs_form"):
 
             # Email setup (using Gmail as an example)
             sender_email = "your_gmail_account@gmail.com"  # Replace with your Gmail
-            sender_password = "your_app_password"  # Replace with your Gmail App Password or password (if less secure apps are enabled)
+            sender_password = "your_app_password"  # Replace with your Gmail App Password
             recipient_email = "samijhaddad@icloud.com"
 
             # Create email
@@ -140,7 +147,7 @@ with st.form(key="sales_docs_form"):
                     server.starttls()
                     server.login(sender_email, sender_password)
                     server.send_message(msg)
-                st.success("Submission has been emailed successfully!")
+                st.success("Submission has been emailed successfully to samijhaddad@icloud.com!")
             except Exception as e:
                 st.error(f"Failed to send email: {str(e)}")
 
