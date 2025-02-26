@@ -44,54 +44,62 @@ st.sidebar.write("Paste your utility bill data below to analyze it!")
 
 # Text area for user input
 st.sidebar.subheader("Paste Your Utility Bill Data")
-user_input = st.sidebar.text_area("Enter data in the format: Start Date, End Date, Days, kWh Used, Total Charges ($), Blended Rate ($/kWh) per row, separated by tabs or commas", height=300)
+user_input = st.sidebar.text_area("Enter data in the format: Start Date, End Date, No of days, Account no., Total Charges, Total kWh, Total $, Blended Electricity Rate ($/kWh) per row, separated by tabs or commas", height=300)
 
 def parse_utility_data(input_text):
-    """Parse the user-input text into a DataFrame."""
+    """Parse the user-input text into a DataFrame based on the new format."""
     try:
         # Split the input into lines and remove empty lines
         lines = [line.strip() for line in input_text.split('\n') if line.strip()]
         
         # Initialize lists to store data
-        dates, days, kwh, charges, rates = [], [], [], [], []
+        dates_start, dates_end, days, account, charges, kwh, total_charges, rates = [], [], [], [], [], [], [], []
         
         for line in lines:
             # Split by tabs or commas (handle both formats)
             parts = [part.strip() for part in line.replace('\t', ',').split(',')]
-            if len(parts) >= 6:  # Ensure we have all required fields
-                dates.append(pd.to_datetime(parts[0], format="%m/%d/%Y"))
+            if len(parts) >= 8:  # Ensure we have all required fields
+                dates_start.append(pd.to_datetime(parts[0], format="%m/%d/%Y"))
+                dates_end.append(pd.to_datetime(parts[1], format="%m/%d/%Y"))
                 days.append(int(parts[2]))
-                kwh.append(int(parts[3].replace(',', '')))
-                charges.append(float(parts[4].replace('$', '').replace(',', '')))
-                rates.append(float(parts[5]))
+                account.append(parts[3].replace('"', '').replace('Account no.', '').strip())
+                charges.append(float(parts[4].replace('"', '').replace('Total Charges', '').replace('$', '').replace(',', '')))
+                kwh.append(int(parts[5].replace('Total kWh', '').replace(',', '')))
+                total_charges.append(float(parts[6].replace('Total $', '').replace('$', '').replace(',', '')))
+                rates.append(float(parts[7].replace('Blended Electricity Rate ($/kWh)', '').strip()))
         
         # Create DataFrame
         df = pd.DataFrame({
-            "Start Date": dates,
-            "End Date": [pd.to_datetime(parts[1], format="%m/%d/%Y") for parts in 
-                         [line.replace('\t', ',').split(',') for line in lines if line.strip()] if len(parts) >= 6],
+            "Start Date": dates_start,
+            "End Date": dates_end,
             "Days": days,
+            "Account No.": account,
+            "Charges ($)": charges,
             "kWh Used": kwh,
-            "Total Charges ($)": charges,
+            "Total Charges ($)": total_charges,
             "Blended Rate ($/kWh)": rates
         })
         df["Month"] = df["Start Date"].dt.strftime("%B %Y")
         return df
     except Exception as e:
-        st.error(f"Error parsing data: {e}. Please ensure the format is correct (e.g., '4/10/2023\t5/9/2023\t29\t672490\t134973\t0.2007').")
+        st.error(f"Error parsing data: {e}. Please ensure the format is correct (e.g., '4/10/2023\t5/9/2023\t29\t\"Account no. 17558068023\"\t$134973\t672490\t$134973\t0.2007').")
         return None
 
 # Parse the input when submitted
 if user_input:
     df = parse_utility_data(user_input)
-    if df is not None and not df.empty:
+    if df is not none and not df.empty:
         # Main dashboard layout
         col1, col2 = st.columns(2)
 
         with col1:
             st.subheader("Summary Statistics")
-            st.write(f"**Account Number:** Not specified (add in input if available)")
-            st.write(f"**Service Address:** Not specified (add in input if available)")
+            unique_accounts = df["Account No."].unique()
+            if len(unique_accounts) == 1:
+                account_no = unique_accounts[0]
+                st.write(f"**Account Number:** {account_no}")
+            else:
+                st.write(f"**Accounts Analyzed:** {', '.join(unique_accounts)}")
             st.write(f"**Total kWh Used:** {df['kWh Used'].sum():,.0f} kWh")
             st.write(f"**Total Cost:** ${df['Total Charges ($)'].sum():,.2f}")
             st.write(f"**Average Blended Rate:** ${df['Blended Rate ($/kWh)'].mean():,.4f}/kWh")
@@ -178,8 +186,8 @@ if user_input:
     else:
         st.error("No valid data provided. Please check the format and try again.")
 else:
-    st.info("Please paste your utility bill data in the sidebar to start the analysis. Use the format: 'Start Date\tEnd Date\tDays\tkWh Used\tTotal Charges ($)\tBlended Rate ($/kWh)' per line, with tabs or commas separating values.")
+    st.info("Please paste your utility bill data in the sidebar to start the analysis. Use the format: 'Start Date\tEnd Date\tNo of days\t\"Account no. 17558068023\"\t\"Total Charges Account no. 17558068023\"\tTotal kWh\tTotal $\tBlended Electricity Rate ($/kWh)' per line, with tabs or commas separating values.")
 
 # Example placeholder in the main area
 st.write("Paste your utility bill data in the sidebar to generate the analysis and visualizations. Here's an example format for a single row:")
-st.code("4/10/2023\t5/9/2023\t29\t672490\t134973\t0.2007")
+st.code("4/10/2023\t5/9/2023\t29\t\"Account no. 17558068023\"\t\"$134973\"\t672490\t$134973\t0.2007")
