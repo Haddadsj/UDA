@@ -15,7 +15,7 @@ cost_reduction = st.sidebar.number_input("Cost Reduction (%)", min_value=0.0, va
 kwh_inflation = st.sidebar.number_input("kWh Utility Inflation Rate (%)", min_value=0.0, value=6.20, step=0.1) / 100
 contingency_budget = st.sidebar.number_input("Contingency Budget ($)", min_value=0.0, value=3634.0, step=100.0)
 meter_count = st.sidebar.number_input("Meter Count", min_value=1, value=3)
-o_m_cost = st.sidebar.number_input("O&M Cost ($)", min_value=0.0, value=0.0, step=100.0)
+o_m_cost = st.sidebar.number_input("O&M Cost ($)", min_value=0.0, value=3634.0, step=100.0)
 ecm_category = st.sidebar.selectbox("ECM Category", ["Lighting", "Solar", "HVAC"])
 contract_type = st.sidebar.selectbox("Contract Type", ["EaaS", "Lease", "PPA"])
 billing_type = st.sidebar.selectbox("Billing Type", ["Savings Based", "Fixed", "Variable"])
@@ -34,8 +34,8 @@ program_management_options = {
     "Customer Developed & Delivered": {"price_basis": "3% Total Net Cost", "base_price": 0.03}
 }
 data_mv_options = {
-    "Off-Balance Sheet, Savings Guarantee": {"price_basis": "Max of $7M or 5% Total Net Cost", "base_price": 7000000.0, "percent": 0.05},
-    "Off-Balance Sheet, Shared Savings/Usage Risk": {"price_basis": "Max of $6M or 5% Total Net Cost", "base_price": 6000000.0, "percent": 0.05},
+    "Off-Balance Sheet, Savings Guarantee": {"price_basis": "Max of $7,000 or 7% Total Net Cost", "base_price": 7000.0, "percent": 0.07},
+    "Off-Balance Sheet, Shared Savings/Usage Risk": {"price_basis": "Max of $6,000 or 6% Total Net Cost", "base_price": 6000.0, "percent": 0.06},
     "Off-Balance Sheet, Generation": {"price_basis": "5% Total Net Cost", "base_price": 0.05}
 }
 incentives_management_options = {
@@ -47,6 +47,7 @@ ongoing_maintenance_options = {
     "Full PM & RM": {"price_basis": "5% Total Net Cost", "base_price": 0.05},
     "PM w/ RM Pass-Through": {"price_basis": "3% Total Net Cost", "base_price": 0.03},
     "Parts & Labor": {"price_basis": "2% Total Net Cost", "base_price": 0.02},
+    "Parts Only": {"price_basis": "2% Total Net Cost", "base_price": 0.02},
     "Manufacturer’s Warranty Only": {"price_basis": "1% Total Net Cost", "base_price": 0.01},
     "Customer Managed Maintenance": {"price_basis": "0% Total Net Cost", "base_price": 0.0}
 }
@@ -84,7 +85,7 @@ st.header("Project Overview")
 st.subheader("Key Project Terms")
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.metric("Term (years)", term_years)
+    st.metric("Term (years)", f"{term_years:.1f}")
 with col2:
     st.metric("Annual Payment", f"${annual_payment:,.2f}")
 with col3:
